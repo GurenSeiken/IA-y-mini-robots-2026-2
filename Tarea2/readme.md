@@ -1,7 +1,10 @@
 ##  Tome el plano de una ciudad pequeña y localice, por ejemplo, las droguerías,  centros de atención de salud y colegios. Por cada concepto dibuje un diagrama de Voronoi. ¿Considera que puede faltar una droguería, o un centro de atención de salud o un colegio? ¿Hay alguna relación entre los diagramas? 
 
+### Diagrama Voronoi Farmacias:
 ![Diagrama Voronoi Farmacias](DVoronoi_Farmacias.png)
+### Diagrama Voronoi Hospitales:
 ![Diagrama Voronoi Hospitales](DVoronoi_Hospitales.png)
+### Diagrama  Voronoi Colegios:
 ![Diagrama Voronoi Colegios](DVoronoi_colegios.png)
 
 Los diagramas se realizaron sobre la ciudad de Ubaté ubicada en el departamento de Cundinamarca, como se puede observar en el diagrama de Voronoi para los hospitales, estos están todos concentrados en el centro de la ciudad, por lo que en la zona norte y sur de la ciudad haría falta un hospital.
