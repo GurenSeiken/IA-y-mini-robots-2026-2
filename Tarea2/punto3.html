@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación Robot - Punto 3</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #222; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+    <!-- Import map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="info">Robot con 3 sensores esquivando objetos<br>Las paredes teletransportan al lado opuesto</div>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Configuración básica de la escena
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+
+        // Cámara perspectiva apuntando desde arriba hacia el centro
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 80, 0);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Iluminación
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(20, 50, 20);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // Entorno: Cuadrícula para referencia del suelo
+        const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // 4 Objetos aleatorios (Obstáculos)
+        const obstacles = [];
+        const obsGeo = new THREE.CylinderGeometry(2, 2, 6, 16);
+        const obsMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+        for(let i = 0; i < 4; i++) {
+            const obs = new THREE.Mesh(obsGeo, obsMat);
+            // Posiciones aleatorias en X y Z entre -40 y 40
+            obs.position.x = (Math.random() - 0.5) * 80;
+            obs.position.z = (Math.random() - 0.5) * 80;
+            obs.position.y = 3;
+            scene.add(obs);
+            obstacles.push(obs);
+        }
+
+        // Robot
+        const robotGroup = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(4, 2, 4);
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3388ff });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1;
+        robotGroup.add(body);
+
+        // Indicador visual de la parte frontal del robot
+        const frontGeo = new THREE.BoxGeometry(2, 2, 2);
+        const frontMat = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+        const front = new THREE.Mesh(frontGeo, frontMat);
+        front.position.set(0, 1, -2); // -Z es el frente en Three.js por defecto
+        robotGroup.add(front);
+        scene.add(robotGroup);
+
+        // Configuración de los Sensores (Raycasters)
+        const sensorDist = 18;
+        const raycasterFront = new THREE.Raycaster();
+        const raycasterLeft = new THREE.Raycaster();
+        const raycasterRight = new THREE.Raycaster();
+
+        // Visualizadores de los sensores (Rayos)
+        const arrowFront = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), sensorDist, 0x00ff00);
+        const arrowLeft = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), sensorDist, 0x00ffff);
+        const arrowRight = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), sensorDist, 0xff00ff);
+        scene.add(arrowFront);
+        scene.add(arrowLeft);
+        scene.add(arrowRight);
+
+        const angleSensor = Math.PI / 5; // Ángulo de apertura para sensores laterales
+        const speed = 0.3;
+        const rotationSpeed = 0.06;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Mover el robot hacia adelante (dirección -Z local)
+            robotGroup.translateZ(-speed);
+
+            // 2. Lógica de teletransporte (si pasa los bordes del plano que es de 100x100)
+            const bounds = 50;
+            if (robotGroup.position.x > bounds) robotGroup.position.x = -bounds;
+            if (robotGroup.position.x < -bounds) robotGroup.position.x = bounds;
+            if (robotGroup.position.z > bounds) robotGroup.position.z = -bounds;
+            if (robotGroup.position.z < -bounds) robotGroup.position.z = bounds;
+
+            // 3. Calcular direcciones de los sensores
+            // -Z es el frente en coordenadas locales
+            const dirFrontLocal = new THREE.Vector3(0, 0, -1);
+            const dirLeftLocal = new THREE.Vector3(-Math.sin(angleSensor), 0, -Math.cos(angleSensor));
+            const dirRightLocal = new THREE.Vector3(Math.sin(angleSensor), 0, -Math.cos(angleSensor));
+
+            // Convertir direcciones locales a direcciones en el mundo
+            const dirFrontWorld = dirFrontLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+            const dirLeftWorld = dirLeftLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+            const dirRightWorld = dirRightLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+
+            // Actualizar posiciones y direcciones de los raycasters
+            // El origen es el centro del robot, levantado un poco en Y
+            const origin = robotGroup.position.clone();
+            origin.y = 1;
+            
+            raycasterFront.set(origin, dirFrontWorld);
+            raycasterLeft.set(origin, dirLeftWorld);
+            raycasterRight.set(origin, dirRightWorld);
+
+            // Actualizar visualizadores de las flechas
+            arrowFront.position.copy(origin);
+            arrowFront.setDirection(dirFrontWorld);
+            
+            arrowLeft.position.copy(origin);
+            arrowLeft.setDirection(dirLeftWorld);
+
+            arrowRight.position.copy(origin);
+            arrowRight.setDirection(dirRightWorld);
+
+            // 4. Detección de colisiones
+            const intFront = raycasterFront.intersectObjects(obstacles);
+            const intLeft = raycasterLeft.intersectObjects(obstacles);
+            const intRight = raycasterRight.intersectObjects(obstacles);
+
+            // Consideramos detección si el rayo golpea a menos distancia del alcance del sensor
+            let frontHit = intFront.length > 0 && intFront[0].distance < sensorDist;
+            let leftHit = intLeft.length > 0 && intLeft[0].distance < sensorDist;
+            let rightHit = intRight.length > 0 && intRight[0].distance < sensorDist;
+
+            // 5. Lógica de Evasión
+            if (frontHit) {
+                // Obstáculo justo al frente: girar fuertemente
+                // Se prefiere girar hacia donde no haya obstáculos
+                if (leftHit) {
+                    robotGroup.rotation.y -= rotationSpeed * 1.5; // Girar a la derecha
+                } else {
+                    robotGroup.rotation.y += rotationSpeed * 1.5; // Girar a la izquierda
+                }
+            } else if (leftHit) {
+                // Obstáculo a la izquierda: girar suavemente a la derecha
+                robotGroup.rotation.y -= rotationSpeed; 
+            } else if (rightHit) {
+                // Obstáculo a la derecha: girar suavemente a la izquierda
+                robotGroup.rotation.y += rotationSpeed; 
+            }
+
+            // Cambiar color visual para indicar detección (rojo si detecta, color original si no)
+            arrowFront.setColor(frontHit ? 0xff0000 : 0x00ff00);
+            arrowLeft.setColor(leftHit ? 0xff0000 : 0x00ffff);
+            arrowRight.setColor(rightHit ? 0xff0000 : 0xff00ff);
+
+            renderer.render(scene, camera);
+        }
+
+        // Ajustar canvas cuando se redimensiona la ventana
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Iniciar animación
+        animate();
+    </script>
+</body>
+</html>

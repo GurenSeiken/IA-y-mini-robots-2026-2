@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación Robot - Punto 2</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #222; }
+        canvas { display: block; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+    <!-- Import map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="info">Robot de Tracción Diferencial (Dos Ruedas) esquivando un laberinto</div>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Configuración básica de la escena
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+
+        // Cámara perspectiva apuntando desde arriba
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 100, 20);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Iluminación
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(20, 50, 20);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // Entorno: Cuadrícula para referencia del suelo
+        const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // Grupo de obstáculos
+        const obstacles = [];
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0x8844aa });
+
+        function createWall(x, z, width, depth) {
+            const wallGeo = new THREE.BoxGeometry(width, 10, depth);
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.position.set(x, 5, z);
+            scene.add(wall);
+            obstacles.push(wall);
+        }
+
+        // Crear Laberinto Simple
+        // Bordes externos
+        createWall(0, -50, 100, 2); // Arriba
+        createWall(0, 50, 100, 2);  // Abajo
+        createWall(-50, 0, 2, 100); // Izquierda
+        createWall(50, 0, 2, 100);  // Derecha
+
+        // Paredes internas variadas y pequeñas
+        // Vamos a generar obstáculos aleatorios de distintos tamaños (cajas)
+        for (let i = 0; i < 20; i++) {
+            let w = 4 + Math.random() * 10; // ancho entre 4 y 14
+            let d = 4 + Math.random() * 10; // profundidad entre 4 y 14
+            
+            let x = (Math.random() - 0.5) * 80;
+            let z = (Math.random() - 0.5) * 80;
+            
+            // Evitar generar obstáculos muy cerca del centro (0,0) donde inicia el robot
+            if (Math.abs(x) < 15 && Math.abs(z) < 15) continue;
+
+            createWall(x, z, w, d);
+        }
+
+        // Robot
+        const robotGroup = new THREE.Group();
+        
+        // Cuerpo
+        const bodyGeo = new THREE.BoxGeometry(4, 2, 6);
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3388ff });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 1.5;
+        robotGroup.add(body);
+
+        // Rueda izquierda
+        const wheelGeo = new THREE.CylinderGeometry(1.5, 1.5, 1, 16);
+        const wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+        const wheelGroupL = new THREE.Group();
+        wheelGroupL.position.set(-2.5, 1.5, 0);
+        robotGroup.add(wheelGroupL);
+        const wheelL = new THREE.Mesh(wheelGeo, wheelMat);
+        wheelL.rotation.z = Math.PI / 2;
+        wheelGroupL.add(wheelL);
+
+        // Rueda derecha
+        const wheelGroupR = new THREE.Group();
+        wheelGroupR.position.set(2.5, 1.5, 0);
+        robotGroup.add(wheelGroupR);
+        const wheelR = new THREE.Mesh(wheelGeo, wheelMat);
+        wheelR.rotation.z = Math.PI / 2;
+        wheelGroupR.add(wheelR);
+
+
+        // Indicador frontal
+        const frontGeo = new THREE.BoxGeometry(2, 1, 1);
+        const frontMat = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+        const front = new THREE.Mesh(frontGeo, frontMat);
+        front.position.set(0, 1.5, -3); // -Z es el frente
+        robotGroup.add(front);
+        
+        // Empezar en la mitad (centro)
+        robotGroup.position.set(0, 0, 0);
+        scene.add(robotGroup);
+
+        // Configuración de los Sensores (Raycasters)
+        const sensorDist = 10; // Reducido para permitirle acercarse más a las paredes
+        const raycasterFront = new THREE.Raycaster();
+        const raycasterLeft = new THREE.Raycaster();
+        const raycasterRight = new THREE.Raycaster();
+
+        // Visualizadores de los sensores (Rayos) - Removidos a petición del usuario
+
+        const angleSensor = Math.PI / 4; // 45 grados de apertura
+        
+        // Cinemática de Tracción Diferencial
+        const maxSpeed = 0.5;
+        const L = 5; // Distancia entre ruedas (5 unidades, desde X=-2.5 a X=2.5)
+        let vL = maxSpeed;
+        let vR = maxSpeed;
+        let turnState = 0; // 0: avanzando libremente, 1: evadiendo izquierda, -1: evadiendo derecha
+        let escapeFrames = 0; // Temporizador para girar forzosamente cuando se atasca
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Calcular direcciones de los sensores
+            const dirFrontLocal = new THREE.Vector3(0, 0, -1);
+            const dirLeftLocal = new THREE.Vector3(-Math.sin(angleSensor), 0, -Math.cos(angleSensor));
+            const dirRightLocal = new THREE.Vector3(Math.sin(angleSensor), 0, -Math.cos(angleSensor));
+
+            // Convertir a mundo
+            const dirFrontWorld = dirFrontLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+            const dirLeftWorld = dirLeftLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+            const dirRightWorld = dirRightLocal.clone().applyQuaternion(robotGroup.quaternion).normalize();
+
+            // Origen de los sensores
+            const origin = robotGroup.position.clone();
+            origin.y = 1.5;
+            
+            raycasterFront.set(origin, dirFrontWorld);
+            raycasterLeft.set(origin, dirLeftWorld);
+            raycasterRight.set(origin, dirRightWorld);
+
+            // (Flechas de sensores removidas)
+
+            // 2. Detección de colisiones
+            const intFront = raycasterFront.intersectObjects(obstacles);
+            const intLeft = raycasterLeft.intersectObjects(obstacles);
+            const intRight = raycasterRight.intersectObjects(obstacles);
+
+            let frontDist = intFront.length > 0 ? intFront[0].distance : Infinity;
+            let leftDist = intLeft.length > 0 ? intLeft[0].distance : Infinity;
+            let rightDist = intRight.length > 0 ? intRight[0].distance : Infinity;
+
+            let frontHit = frontDist < sensorDist;
+            let leftHit = leftDist < sensorDist;
+            let rightHit = rightDist < sensorDist;
+
+            // 3. Lógica de Evasión modulando vL y vR
+            vL = maxSpeed;
+            vR = maxSpeed;
+
+            if (escapeFrames > 0) {
+                // Modo escape: forzar giro
+                escapeFrames--;
+                vL = turnState === 1 ? -maxSpeed : maxSpeed;
+                vR = turnState === 1 ? maxSpeed : -maxSpeed;
+            } else if (frontHit) {
+                // Hay un obstáculo al frente. Frenar y girar en el lugar
+                // Bloqueamos la decisión de giro para evitar que cambie cada frame (oscilación)
+                if (turnState === 0) {
+                    if (leftDist > rightDist) {
+                        // Más espacio a la izquierda, decidimos girar a la izquierda
+                        turnState = 1;
+                    } else {
+                        // Más espacio a la derecha, decidimos girar a la derecha
+                        turnState = -1;
+                    }
+                }
+
+                if (turnState === 1) {
+                    // Girar a la izquierda
+                    vL = -maxSpeed;
+                    vR = maxSpeed;
+                } else {
+                    // Girar a la derecha
+                    vL = maxSpeed;
+                    vR = -maxSpeed;
+                }
+            } else {
+                turnState = 0; // Se liberó el frente, reseteamos el estado de giro
+                // No hay obstáculo directo al frente, pero revisar laterales para no raspar las paredes
+                if (leftHit && leftDist < sensorDist * 0.6) {
+                    // Muy cerca a la izquierda, girar a la derecha
+                    vR = maxSpeed * 0.1; // Reducir vel derecha
+                    vL = maxSpeed;       // Aumentar vel izquierda (ya está en max)
+                } else if (rightHit && rightDist < sensorDist * 0.6) {
+                    // Muy cerca a la derecha, girar a la izquierda
+                    vL = maxSpeed * 0.1;
+                    vR = maxSpeed;
+                }
+            }
+
+            // Aplicar cinemática de tracción diferencial
+            // Velocidad lineal
+            const v = (vR + vL) / 2;
+            // Velocidad angular
+            const omega = (vR - vL) / L;
+
+            // Animar rotación visual de las ruedas
+            // Al estar dentro de un grupo que no tiene rotación en Z, rotar en X 
+            // simula el rodamiento correctamente sin afectar la inclinación del cilindro.
+            wheelGroupL.rotation.x -= vL / 1.5; 
+            wheelGroupR.rotation.x -= vR / 1.5;
+
+            // Guardar estado previo para colisiones físicas
+            const prevPos = robotGroup.position.clone();
+            const prevRot = robotGroup.rotation.y;
+
+            // Mover el robot temporalmente
+            robotGroup.translateZ(-v);
+            // Rotar el robot
+            // En Three.js rotar positivo en Y es girar a la izquierda (counter-clockwise)
+            // Si vR > vL, omega es positivo, y el robot debe girar a la izquierda, sumamos omega.
+            robotGroup.rotation.y += omega * 0.1; // Ajuste de sensibilidad
+
+            // Chequeo de colisión física (chocar contra paredes)
+            // Usamos una esfera delimitadora (Bounding Sphere) para el robot en lugar de Box3.
+            // Un Box3 (AABB) crece al rotar, lo que causa falsas colisiones al intentar girar en esquinas cerradas.
+            // Con radio 3.5 cubrimos el tamaño del robot sin penalizar sus giros sobre su propio eje.
+            robotGroup.updateMatrixWorld(true);
+            const robotSphere = new THREE.Sphere(robotGroup.position, 3.5);
+            let crashed = false;
+            for (let obs of obstacles) {
+                // Las paredes no se mueven, así que su Box3 es fácil de obtener
+                const wallBox = new THREE.Box3().setFromObject(obs);
+                if (wallBox.intersectsSphere(robotSphere)) {
+                    crashed = true;
+                    break;
+                }
+            }
+
+            if (crashed) {
+                // ¡Chocó!
+                // 1. Revertimos SOLO la posición para evitar traspasar el muro.
+                // 2. CONSERVAMOS la rotación nueva para permitirle girar en el sitio (resbalar).
+                robotGroup.position.copy(prevPos);
+                
+                // NOTA: Eliminamos el retroceso forzado (translateZ) porque si el robot está
+                // en una esquina apretada, retroceder a ciegas puede meterlo dentro de otra pared
+                // y dejarlo atascado permanentemente.
+                
+                // Activar modo escape (varios frames girando forzosamente para destrabarse)
+                escapeFrames = 15;
+                
+                // Si estaba atascado tratando de ir de frente, le forzamos a intentar girar
+                if (turnState === 0) {
+                    turnState = Math.random() > 0.5 ? 1 : -1; 
+                }
+                
+                // Indicador visual de choque (rojo)
+                bodyMat.color.setHex(0xff3333);
+            } else {
+                // Recuperar color normal
+                bodyMat.color.setHex(0x3388ff);
+            }
+
+            // (Actualización visual de flechas removida)
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
