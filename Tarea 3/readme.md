@@ -1,3 +1,6 @@
+# Tarea 3 - Punto 1: Maximizar la función
+Para ver el desarrollo completo del punto mirar el archivo [Algoritmo_Genetico_Maximizar_Funcion.ipynb]
+
 # Tarea 3 - Punto 2: Verdadera Democracia
 
 **Asignatura:** Inteligencia Artificial y Mini-robots  
