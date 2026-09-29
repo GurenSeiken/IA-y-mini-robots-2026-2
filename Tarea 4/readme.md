@@ -57,6 +57,65 @@ Al ejecutar el modelo de red neuronal de dos capas ocultas sobre este experiment
 - **Conclusión de la Predicción:** El modelo predijo que el cultivo correspondiente era la clase `class_0`. Al contrastarlo con la clase real del registro, el resultado fue exactamente el mismo. Esto nos demuestra empíricamente que la red neuronal no solo aprendió, sino que es capaz de generalizar y predecir correctamente sobre nuevos datos que se le presenten en el futuro.
 
 ---
+# Punto 4. Predicción de Diabetes mediante Redes Neuronales
+
+Este repositorio contiene la solución al ejercicio práctico de Redes Neuronales (Sección 5.9, Ejercicio 4), desarrollado en Google Colab utilizando Python, TensorFlow/Keras y Pandas.
+
+## Objetivo del Proyecto
+1. Descargar y cargar un dataset público (Pima Indians Diabetes Database).
+2. Estudiar sus características (features) y su rótulo (target).
+3. Generar y entrenar un modelo de Red Neuronal.
+4. Tomar ejemplos de internet y analizar los resultados de las predicciones.
+
+---
+
+##  1. Estudio del Dataset
+Para este ejercicio se seleccionó el **Pima Indians Diabetes Database**. El objetivo del dataset es diagnosticar mediante predicción si un paciente tiene diabetes basándose en ciertas mediciones diagnósticas.
+
+*   **Rótulo (Target / Label):** 
+    *   `Outcome`: Es una variable binaria donde `1` indica resultado positivo para diabetes y `0` indica resultado negativo.
+*   **Características (Features):** El modelo utiliza 8 variables de entrada (predictoras):
+    1.  `Pregnancies`: Número de embarazos.
+    2.  `Glucose`: Concentración de glucosa en plasma a las 2 horas de una prueba de tolerancia oral.
+    3.  `BloodPressure`: Presión arterial diastólica (mm Hg).
+    4.  `SkinThickness`: Grosor del pliegue cutáneo del tríceps (mm).
+    5.  `Insulin`: Insulina sérica de 2 horas (mu U/ml).
+    6.  `BMI`: Índice de Masa Corporal (peso en kg / altura en m²).
+    7.  `DiabetesPedigreeFunction`: Función de pedigrí de la diabetes (historial genético).
+    8.  `Age`: Edad en años.
+
+---
+
+##  2. Arquitectura del Modelo
+Se diseñó un modelo de Red Neuronal Secuencial (Feed-Forward) adecuado para clasificación binaria, estructurado de la siguiente manera:
+
+*   **Capa de Entrada y Primera Capa Oculta:** 16 neuronas con función de activación `ReLU`. (Recibe los 8 *features* previamente normalizados).
+*   **Segunda Capa Oculta:** 8 neuronas con función de activación `ReLU`.
+*   **Capa de Salida:** 1 neurona con función de activación `Sigmoide` (ideal para obtener una probabilidad entre 0 y 1).
+*   **Compilación:** Optimizador `Adam` y función de pérdida `binary_crossentropy`.
+
+---
+
+##  3. Ejemplos de Internet y Análisis de Resultados
+
+Para comprobar la capacidad de generalización del modelo, se extrajeron dos perfiles médicos (fuera del dataset de entrenamiento) y se sometieron a la red neuronal para observar sus predicciones.
+
+###  Ejemplo 1: Perfil de bajo riesgo (Paciente Sano)
+*   **Datos de entrada:** `[1, 85, 66, 29, 0, 26.6, 0.351, 31]`
+*   **Análisis médico previo:** Es una paciente joven, con un nivel de glucosa en ayunas óptimo (85), un IMC normal (26.6) y sin gran predisposición genética.
+*   **Predicción de la Red:** **NEGATIVO (0)** - Probabilidad de diabetes sumamente baja.
+*   **Conclusión:** La red neuronal evaluó correctamente que los bajos niveles de glucosa e IMC contrarrestan cualquier otro factor, clasificando a la paciente como libre de la enfermedad.
+
+###  Ejemplo 2: Perfil de alto riesgo
+*   **Datos de entrada:** `[5, 166, 72, 19, 175, 25.8, 0.587, 51]`
+*   **Análisis médico previo:** Paciente de mayor edad (51), con glucosa muy elevada (166), niveles altos de insulina y antecedentes de múltiples embarazos.
+*   **Predicción de la Red:** **POSITIVO (1)** - Probabilidad de diabetes alta (mayor al 80%).
+*   **Conclusión:** El modelo le da un peso significativo a la característica `Glucose` combinada con la `Age` (Edad) y la función de pedigrí. La predicción es altamente coherente con los manuales de diagnóstico médico, arrojando un caso positivo con gran confianza.
+
+---
+
+##  Conclusión General
+El ejercicio demuestra cómo una red neuronal multicapa básica puede aprender patrones complejos de salud a partir de datos tabulares. La fase de escalado (Normalización de datos) implementada en el código fue fundamental para que las variables con valores muy altos (como la Insulina) no opacaran a variables con valores bajos (como la función de pedigrí). Los resultados frente a datos de prueba confirman que el modelo interiorizó correctamente la relación entre los indicadores de salud y la presencia de la enfermedad.
 
 # Punto 5 (Libre): Diagnóstico Médico con TensorFlow
 
