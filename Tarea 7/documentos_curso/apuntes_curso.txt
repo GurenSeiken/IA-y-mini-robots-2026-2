@@ -1,0 +1,15 @@
+APUNTES DEL CURSO: INTELIGENCIA ARTIFICIAL Y MINI ROBOTS 2026-2
+
+Unidad 1: Introducción a la Robótica Autónoma
+Los mini robots son plataformas de experimentación ideales para algoritmos de IA. Se basan en microcontroladores y sensores de bajo costo como el sensor ultrasónico HC-SR04 y sensores infrarrojos para seguimiento de línea.
+
+Unidad 2: Agentes Inteligentes y RAG
+RAG (Retrieval-Augmented Generation) es una técnica que permite a un LLM (Large Language Model) acceder a una base de datos externa de documentos para responder preguntas con mayor precisión y reducir las alucinaciones.
+
+Componentes del RAG:
+1. Base de datos vectorial (Vector DB): Como ChromaDB o Pinecone.
+2. Embeddings: Representaciones matemáticas de texto.
+3. LLM: El modelo que genera la respuesta, como Llama 3 o GPT-4.
+
+Unidad 3: LangChain y Tool Calling
+Los agentes pueden utilizar "Tools" (herramientas) para realizar acciones en el mundo real o consultar bases de datos. LangChain es el framework más utilizado para orquestar esto.

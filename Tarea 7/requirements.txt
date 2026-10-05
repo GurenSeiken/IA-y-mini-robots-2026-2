@@ -1,0 +1,9 @@
+langchain
+langchain-community
+langchain-core
+langchain-chroma
+chromadb
+sentence-transformers
+pypdf
+openai
+langchain-openai

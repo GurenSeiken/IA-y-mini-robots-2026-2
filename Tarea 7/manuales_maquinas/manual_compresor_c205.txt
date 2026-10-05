@@ -1,0 +1,20 @@
+MANUAL DE OPERACIÓN Y MANTENIMIENTO: COMPRESOR C-205
+
+1. Introducción
+El compresor C-205 proporciona aire comprimido a toda la planta de ensamblaje.
+
+2. Especificaciones Técnicas
+- Potencia: 15 HP
+- Presión máxima: 10 bar
+- Capacidad del tanque: 500 Litros
+
+3. Mantenimiento Preventivo
+- Diario: Purgar el agua del tanque de almacenamiento.
+- Mensual: Cambiar el repuesto REP-002 (Filtro de aceite) y revisar el nivel de aceite lubricante.
+- Anual: Reemplazar el repuesto REP-003 (Correa de transmisión).
+
+4. Solución de Problemas
+- Falla: El compresor no enciende.
+  Causa posible: Falla en el presostato o falta de energía eléctrica.
+- Falla: Presión insuficiente en la línea.
+  Causa posible: Filtro de aire obstruido o fugas en la red. Se debe solicitar orden de trabajo prioritaria.

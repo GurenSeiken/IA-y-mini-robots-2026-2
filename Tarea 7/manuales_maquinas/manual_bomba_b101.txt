@@ -1,0 +1,20 @@
+MANUAL DE MANTENIMIENTO: BOMBA CENTRÍFUGA B-101
+
+1. Descripción General
+La bomba centrífuga B-101 se utiliza para el transporte de fluidos de refrigeración.
+
+2. Especificaciones Técnicas
+- Caudal máximo: 50 L/s
+- Presión de operación: 5 bar
+- Voltaje: 220V AC trifásico
+- Frecuencia de mantenimiento preventivo: Cada 3 meses.
+
+3. Solución de Problemas (Troubleshooting)
+- Falla: Fuga en el sello mecánico.
+  Solución: Reemplazar el repuesto REP-001 (Rodamiento y sellos). Apagar inmediatamente el equipo para evitar daños en el motor.
+- Falla: Ruido excesivo.
+  Solución: Revisar alineación del eje y lubricar rodamientos.
+
+4. Piezas de Repuesto
+Código REP-001: Kit de sellos y rodamiento.
+Código REP-005: Impulsor de bronce.
