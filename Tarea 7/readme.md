@@ -1,6 +1,17 @@
-# Informe de Diseño: Tarea 7 (RAG y Agentes)
+# Informe de Diseño y Ejecución: Tarea 7 (RAG y Agentes)
 
-Este documento detalla y justifica las decisiones técnicas y arquitectónicas tomadas para la implementación de los chatbots RAG y el Agente de Mantenimiento Industrial.
+## 🚀 ¿Cómo ejecutar este proyecto?
+Toda la lógica de la tarea (los dos chatbots RAG y el Agente de Mantenimiento) se encuentra unificada y documentada dentro del cuadernillo interactivo `Notebook_Tarea7.ipynb`.
+
+**Pasos para probarlo:**
+1. Instala las dependencias ejecutando en tu consola: `pip install -r requirements.txt`.
+2. Abre **LM Studio**, asegúrate de tener cargado el modelo **Gemma 2 2B** y enciende el **Local Server** en el puerto `1234`.
+3. Abre el archivo `Notebook_Tarea7.ipynb` en tu editor (VS Code o Jupyter).
+4. Ejecuta las celdas secuencialmente (puedes usar el botón "Run All").
+
+---
+
+Este documento detalla y justifica las decisiones técnicas y arquitectónicas tomadas para la implementación del código en dicho cuadernillo.
 
 ## 1. Selección del Modelo de Lenguaje e Infraestructura
 **Decisión:** Utilizar el modelo **Gemma 2 2B** (referenciado como gemma4 e2b) desplegado a través del servidor local de **LM Studio**.
